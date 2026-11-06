@@ -1,0 +1,50 @@
+name: Alerta ar-condicionado
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # a cada 15 min (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: {}       # permite rodar manualmente pela aba Actions
+
+concurrency:
+  group: alerta
+  cancel-in-progress: false
+
+jobs:
+  checar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurar estado (últimas mensagens lidas)
+        uses: actions/cache/restore@v4
+        with:
+          path: estado
+          key: estado-${{ github.run_id }}
+          restore-keys: estado-
+
+      - name: Checar ofertas
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_SESSION: ${{ secrets.TG_SESSION }}
+          TG_CHATS: ${{ secrets.TG_CHATS }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ALERT_CHAT_ID: ${{ secrets.ALERT_CHAT_ID }}
+          BTU_MINIMO: ${{ vars.BTU_MINIMO }}
+          PRECO_MAXIMO: ${{ vars.PRECO_MAXIMO }}
+        run: python verificar.py
+
+      - name: Salvar estado
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: estado
+          key: estado-${{ github.run_id }}
