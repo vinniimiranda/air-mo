@@ -33,7 +33,7 @@ Crie um bot no @BotFather (guarde o token), mande `/start` para ele e pegue seu 
 | `TG_API_ID` | api_id |
 | `TG_API_HASH` | api_hash |
 | `TG_SESSION` | sessão gerada no passo 2 |
-| `TG_CHATS` | grupos/canais separados por vírgula, ex.: `@canal1,@grupo2` (ou IDs numéricos) |
+| `TG_CHATS` | grupos/canais, **um por linha**: o nome como aparece no Telegram (acentos/emojis não importam, pode ser só um trecho), `@username` ou ID numérico |
 | `BOT_TOKEN` | token do bot (opcional) |
 | `ALERT_CHAT_ID` | seu ID numérico (opcional) |
 

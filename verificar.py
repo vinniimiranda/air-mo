@@ -22,7 +22,10 @@ log = logging.getLogger("alerta")
 API_ID = int(os.environ["TG_API_ID"])
 API_HASH = os.environ["TG_API_HASH"]
 SESSION = os.environ["TG_SESSION"]
-CHATS = [c.strip() for c in os.environ["TG_CHATS"].split(",") if c.strip()]
+# Um por linha (ou separados por vírgula): nome do grupo como aparece no Telegram,
+# @username, link t.me/... ou ID numérico
+_raw = os.environ["TG_CHATS"]
+CHATS = [c.strip() for c in (_raw.splitlines() if "\n" in _raw else _raw.split(",")) if c.strip()]
 BTU_MINIMO = int(os.getenv("BTU_MINIMO") or 9000)
 PRECO_MAXIMO = float(os.environ["PRECO_MAXIMO"]) if os.getenv("PRECO_MAXIMO") else None
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -74,8 +77,36 @@ async def enviar_alerta(client, texto: str):
     await client.send_message("me", texto)
 
 
-async def checar_chat(client, chat_ref: str, estado: dict) -> int:
-    chat = await client.get_entity(chat_ref)
+def _eh_referencia_direta(ref: str) -> bool:
+    return ref.startswith("@") or "t.me/" in ref or ref.lstrip("-").isdigit()
+
+
+async def resolver_chats(client, refs: list[str]) -> list:
+    """Converte cada referência em entidade; nomes são buscados nas suas conversas."""
+    dialogos = None
+    chats = []
+    for ref in refs:
+        if _eh_referencia_direta(ref):
+            chats.append((ref, int(ref) if ref.lstrip("-").isdigit() else ref))
+            continue
+        if dialogos is None:
+            dialogos = [d async for d in client.iter_dialogs() if d.is_group or d.is_channel]
+        alvo = normalizar(ref).strip()
+        exatos = [d for d in dialogos if normalizar(d.name).strip() == alvo]
+        parciais = [d for d in dialogos if alvo in normalizar(d.name)]
+        achados = exatos or parciais
+        if not achados:
+            log.error("Nenhum grupo/canal com o nome %r nas suas conversas", ref)
+            continue
+        if len(achados) > 1:
+            log.warning("%r bate com vários: %s. Usando %r",
+                        ref, [d.name for d in achados], achados[0].name)
+        chats.append((ref, achados[0].entity))
+    return chats
+
+
+async def checar_chat(client, chat_ref, estado: dict) -> int:
+    chat = chat_ref if not isinstance(chat_ref, (str, int)) else await client.get_entity(chat_ref)
     chave = str(chat.id)
     ultimo = estado["ultimo_id"].get(chave)
     if ultimo is None:
@@ -117,11 +148,11 @@ async def main():
     async with TelegramClient(StringSession(SESSION), API_ID, API_HASH) as client:
         if not await client.is_user_authorized():
             raise SystemExit("TG_SESSION inválida ou expirada: gere de novo com gerar_sessao.py")
-        for chat_ref in CHATS:
+        for nome, chat_ref in await resolver_chats(client, CHATS):
             try:
                 await checar_chat(client, chat_ref, estado)
             except Exception:
-                log.exception("Erro ao checar %s", chat_ref)
+                log.exception("Erro ao checar %s", nome)
             finally:
                 salvar_estado(estado)
 
