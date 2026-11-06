@@ -17,8 +17,8 @@ No GitHub, neste repositório: **Code → Codespaces → Create codespace**. No 
 ```bash
 pip install -r requirements.txt && python gerar_sessao.py
 ```
-Informe api_id, api_hash, telefone (+55...) e o código que o Telegram enviar. Copie a sessão
-gerada. Depois apague o codespace (github.com/codespaces).
+Informe api_id e api_hash. Vai aparecer um QR code: no celular, abra Telegram → Configurações →
+Dispositivos → **Conectar dispositivo desktop** e escaneie. Copie a sessão gerada. Depois apague o codespace (github.com/codespaces).
 
 > ⚠️ A sessão dá acesso total à sua conta. Guarde só como *secret*, nunca no código.
 
