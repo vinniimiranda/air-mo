@@ -148,6 +148,10 @@ async def main():
     async with TelegramClient(StringSession(SESSION), API_ID, API_HASH) as client:
         if not await client.is_user_authorized():
             raise SystemExit("TG_SESSION inválida ou expirada: gere de novo com gerar_sessao.py")
+        if os.getenv("ENVIAR_TESTE") == "true":
+            destino = "bot" if BOT_TOKEN and ALERT_CHAT_ID else "Mensagens salvas"
+            log.info("Enviando mensagem de teste via %s", destino)
+            await enviar_alerta(client, "✅ Teste do alerta de ar-condicionado: está funcionando!")
         for nome, chat_ref in await resolver_chats(client, CHATS):
             try:
                 await checar_chat(client, chat_ref, estado)

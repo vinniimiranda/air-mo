@@ -3,7 +3,12 @@ name: Alerta ar-condicionado
 on:
   schedule:
     - cron: "*/15 * * * *"   # a cada 15 min (o GitHub pode atrasar alguns minutos)
-  workflow_dispatch: {}       # permite rodar manualmente pela aba Actions
+  workflow_dispatch:          # permite rodar manualmente pela aba Actions
+    inputs:
+      enviar_teste:
+        description: "Enviar uma mensagem de teste para conferir o aviso"
+        type: boolean
+        default: false
 
 concurrency:
   group: alerta
@@ -40,6 +45,7 @@ jobs:
           ALERT_CHAT_ID: ${{ secrets.ALERT_CHAT_ID }}
           BTU_MINIMO: ${{ vars.BTU_MINIMO }}
           PRECO_MAXIMO: ${{ vars.PRECO_MAXIMO }}
+          ENVIAR_TESTE: ${{ inputs.enviar_teste }}
         run: python verificar.py
 
       - name: Salvar estado
